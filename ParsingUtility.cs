@@ -127,12 +127,15 @@
         /// <returns>
         /// The list of fields.
         /// </returns>
-        public static List<SitecoreField> GetFieldsForTemplate(SitecoreTemplate item, bool includeBases)
+        public static ICollection<SitecoreField> GetFieldsForTemplate(SitecoreTemplate item, bool includeBases)
         {
-            var fields = new List<SitecoreField>();
+            var fields = new HashSet<SitecoreField>(new SitecoreFieldEqualityComparer());
 
             // Add direct fields that aren't ignored
-            fields.AddRange(item.Fields.Where(f => GetCustomProperty(f.Data, "ignore") != "true"));
+	        foreach (var field in item.Fields.Where(f => GetCustomProperty(f.Data, "ignore") != "true"))
+	        {
+		        fields.Add(field);
+	        }
 
             if (!includeBases)
             {
@@ -142,8 +145,11 @@
             // leverage an extension method to recursively select base templates, then flatten the fields down
             var baseFields = item.BaseTemplates.SelectRecursive(i => i.BaseTemplates).SelectMany(t => t.Fields);
 
-            // only grab base fields who aren't ignored
-            fields.AddRange(baseFields.Where(f => GetCustomProperty(f.Data, "ignore") != "true"));
+			// only grab base fields who aren't ignored
+			foreach (var field in baseFields.Where(f => GetCustomProperty(f.Data, "ignore") != "true"))
+			{
+				fields.Add(field);
+			}
 
             return fields;
         }
